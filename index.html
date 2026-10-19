@@ -141,19 +141,21 @@ table.in tfoot td.nm{color:var(--muted);font-weight:600;font-size:13px}
 .warnline{font-size:13px;color:var(--neg);font-weight:600;background:var(--neg-soft);border-radius:8px;padding:7px 10px}
 
 /* 개인별 결과 표 */
-table.res{border-collapse:collapse;width:100%;min-width:340px}
+table.res{border-collapse:collapse;width:100%}
+table.in th{white-space:nowrap}
 table.res th{font-size:14.5px;font-weight:700;color:var(--ink-2);padding:13px 4px 11px;text-align:right;border-bottom:1px solid var(--line-strong)}
 table.res td{padding:11px 4px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
 table.res tr:last-child td{border-bottom:0}
-table.res td.rn,table.res th:first-child{width:31%;text-align:left}
+table.res td.rn,table.res th:first-child{width:28%;text-align:left}
 table.res td:first-child,table.res th:first-child{padding-left:10px}
+table.res td,table.res th{padding-left:3px;padding-right:3px}
 table.res td:last-child,table.res th:last-child{padding-right:10px}
 .r-nm{display:block;font-weight:700;font-size:15px}
-.r-tot{display:block;font-family:var(--f-display);font-weight:700;font-size:16px;color:var(--accent);margin-top:1px}
+.r-tot{display:block;font-family:var(--f-display);font-weight:700;font-size:15px;white-space:nowrap;color:var(--accent);margin-top:1px}
 .r-tot.zero{color:var(--muted)}
-.r-v{display:block;font-weight:600;font-size:14px}
+.r-v{display:block;font-weight:600;font-size:13.5px;white-space:nowrap;letter-spacing:-.01em}
 .r-v.none{color:var(--line-strong);font-weight:500}
-.r-s{display:block;font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.35}
+.r-s{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35}
 .r-s .cap{margin-left:0}
 .r-warn{display:block;font-size:11px;color:var(--neg);font-weight:600;margin-top:2px}
 
@@ -171,6 +173,10 @@ table.res td:last-child,table.res th:last-child{padding-right:10px}
 .rule ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px;color:var(--ink-2)}
 .formula{font-size:13.5px;background:var(--sunk);border-radius:9px;padding:9px 12px;font-weight:600;color:var(--ink)}
 .foot{font-size:12.5px;color:var(--muted);margin:0 2px}
+/* 표 제목줄 고정: 탭 바로 아래에 붙어 있도록 (스크립트가 위치를 맞춤) */
+table.in thead th,table.res thead th{background:var(--surface);position:relative;z-index:2;will-change:transform}
+table.in thead th.nm{z-index:3}
+thead.stuck th{box-shadow:inset 0 -1px 0 var(--line-strong),0 6px 8px -6px rgba(0,0,0,.18)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -535,6 +541,26 @@ table.res td:last-child,table.res th:last-child{padding-right:10px}
     renderEditor();
   });
   document.getElementById('btnClearExample').addEventListener('click', clearNumbers);
+
+  /* ── 표 제목줄 고정 ── */
+  var tabsEl = document.querySelector('.tabs'), _stickRaf = 0;
+  function stickHeads(){
+    _stickRaf = 0;
+    var top = tabsEl.getBoundingClientRect().bottom;
+    document.querySelectorAll('table.in, table.res').forEach(function(t){
+      var head = t.tHead; if(!head) return;
+      if(!t.offsetParent){ head.classList.remove('stuck'); return; }
+      var r = t.getBoundingClientRect(), h = head.offsetHeight, f = t.tFoot ? t.tFoot.offsetHeight : 0;
+      var off = Math.max(0, Math.min(top - r.top, r.height - h - f));
+      var tf = off > 0 ? 'translateY(' + off + 'px)' : '';
+      Array.prototype.forEach.call(head.querySelectorAll('th'), function(th){ th.style.transform = tf; });
+      head.classList.toggle('stuck', off > 0);
+    });
+  }
+  function queueStick(){ if(!_stickRaf) _stickRaf = requestAnimationFrame(stickHeads); }
+  window.addEventListener('scroll', queueStick, {passive:true});
+  window.addEventListener('resize', queueStick);
+  tabs.forEach(function(t){ t.addEventListener('click', function(){ setTimeout(stickHeads, 0); }); });
 
   /* ── 시작 ── */
   load();
